@@ -1,58 +1,46 @@
 'use strict';
-const CACHE_NAME = 'flutter-app-cache';
-const RESOURCES = {
-  "/": "/",
-  "main.dart.js": "main.dart.js",
-  "index.html": "index.html",
-  "flutter.js": "flutter.js",
-  "flutter_bootstrap.js": "flutter_bootstrap.js",
-  "assets/AssetManifest.json": "assets/AssetManifest.json",
-  "assets/FontManifest.json": "assets/FontManifest.json"
-};
+const CACHE_NAME = 'flutter-app-cache-v1';
+const urlsToCache = [
+  '/school-management-system/',
+  '/school-management-system/index.html',
+  '/school-management-system/flutter.js',
+  '/school-management-system/flutter_bootstrap.js',
+  '/school-management-system/main.dart.js',
+  '/school-management-system/version.json'
+];
 
-self.addEventListener('install', (event) => {
-  self.skipWaiting();
+self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(Object.values(RESOURCES)))
+      .then(function(cache) {
+        return cache.addAll(urlsToCache);
+      })
   );
 });
 
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', function(event) {
   event.waitUntil(
-    caches.keys().then((keyList) => {
-      return Promise.all(keyList.map((key) => {
-        if (key !== CACHE_NAME) {
-          return caches.delete(key);
-        }
-      }));
+    caches.keys().then(function(cacheNames) {
+      return Promise.all(
+        cacheNames.map(function(cacheName) {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
     })
   );
-  return self.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  
+self.addEventListener('fetch', function(event) {
   event.respondWith(
     caches.match(event.request)
-      .then((response) => {
+      .then(function(response) {
         if (response) {
           return response;
         }
-        return fetch(event.request).then(
-          (response) => {
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseClone);
-              });
-            return response;
-          }
-        );
-      })
+        return fetch(event.request);
+      }
+    )
   );
 });
